@@ -66,14 +66,17 @@ export function makeScene(cols = 12, rows = 12) {
   };
 }
 
-export function createRoom({ roomCode, gmName, gmClientId, socketId }) {
+export function createRoom({ roomCode, gmName, gmClientId, socketId, protocol = 1, campaignId = "" }) {
   const code = normalizeRoomCode(roomCode) || createRoomCode();
   if (rooms.has(code)) throw new Error("ROOM_EXISTS");
 
   const gmSecret = randomBytes(24).toString("hex");
+  const safeProtocol = Number(protocol) === 2 ? 2 : 1;
   const room = {
     code,
     gmSecret,
+    protocol: safeProtocol,
+    campaignId: sanitizeText(campaignId, 120),
     gm: {
       clientId: sanitizeText(gmClientId || randomUUID(), 120),
       name: sanitizeText(gmName || "GM", 60) || "GM",
@@ -81,6 +84,8 @@ export function createRoom({ roomCode, gmName, gmClientId, socketId }) {
       online: true,
     },
     players: new Map(),
+    // Legacy protocol v1 state. Protocol v2 clients keep all campaign/session data
+    // on the GM device and use Cloud Run only for presence + relay traffic.
     scene: makeScene(),
     chat: [],
     log: [],
@@ -89,11 +94,15 @@ export function createRoom({ roomCode, gmName, gmClientId, socketId }) {
   };
 
   rooms.set(code, room);
-  addLog(room, "room_created", { by: room.gm.name });
+  if (safeProtocol !== 2) addLog(room, "room_created", { by: room.gm.name });
   return room;
 }
 
 export function addLog(room, type, payload = {}) {
+  if (room?.protocol === 2) {
+    touch(room);
+    return;
+  }
   room.log.push({
     id: randomUUID(),
     type,
@@ -105,6 +114,10 @@ export function addLog(room, type, payload = {}) {
 }
 
 export function addChat(room, message) {
+  if (room?.protocol === 2) {
+    touch(room);
+    return;
+  }
   room.chat.push(message);
   if (room.chat.length > MAX_CHAT) room.chat.splice(0, room.chat.length - MAX_CHAT);
   touch(room);
@@ -169,8 +182,10 @@ export function playerTokenFor(room, clientId) {
 }
 
 export function publicRoom(room) {
-  return {
+  const presence = {
     code: room.code,
+    protocol: room.protocol || 1,
+    campaignId: room.campaignId || "",
     gm: {
       clientId: room.gm.clientId,
       name: room.gm.name,
@@ -183,11 +198,16 @@ export function publicRoom(room) {
       online: Boolean(player.online),
       joinedAt: player.joinedAt,
     })),
+    createdAt: room.createdAt,
+    updatedAt: room.updatedAt,
+  };
+
+  if (room.protocol === 2) return presence;
+  return {
+    ...presence,
     scene: room.scene,
     chat: room.chat,
     log: room.log,
-    createdAt: room.createdAt,
-    updatedAt: room.updatedAt,
   };
 }
 
