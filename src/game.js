@@ -3,6 +3,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 const MAX_CHAT = 100;
 const MAX_LOG = 200;
 const ROOM_TTL_MS = 6 * 60 * 60 * 1000;
+const MAX_SCENE_IMAGE_LENGTH = 850000;
 
 export const rooms = new Map();
 
@@ -22,8 +23,9 @@ export function sanitizeAvatar(value) {
 
 export function sanitizeImageUrl(value) {
   const url = String(value || "").trim();
-  if (!url || url.length > 2048) return "";
-  if (/^https:\/\//i.test(url)) return url;
+  if (!url) return "";
+  if (/^https:\/\//i.test(url) && url.length <= 2048) return url;
+  if (url.length <= MAX_SCENE_IMAGE_LENGTH && /^data:image\/(?:png|jpe?g|webp);base64,/i.test(url)) return url;
   return "";
 }
 
