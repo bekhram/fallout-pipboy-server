@@ -1,13 +1,13 @@
 {
   "name": "fallout-pipboy-server",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
-  "description": "Realtime multiplayer server for PIP-2D20",
-  "main": "src/server.js",
+  "description": "Realtime room and relay server for PIP-2D20",
+  "main": "src/start.js",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "node --watch src/server.js"
+    "start": "node src/start.js",
+    "dev": "node --watch src/start.js"
   },
   "engines": {
     "node": ">=20"
