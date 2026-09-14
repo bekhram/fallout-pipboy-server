@@ -2,7 +2,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 
 const MAX_CHAT = 100;
 const MAX_LOG = 200;
-const ROOM_TTL_MS = 6 * 60 * 60 * 1000;
+const ROOM_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const MAX_SCENE_IMAGE_LENGTH = 850000;
 
 export const rooms = new Map();
@@ -71,7 +71,7 @@ export function createRoom({ roomCode, gmName, gmClientId, socketId, protocol = 
   if (rooms.has(code)) throw new Error("ROOM_EXISTS");
 
   const gmSecret = randomBytes(24).toString("hex");
-  const safeProtocol = Number(protocol) === 2 ? 2 : 1;
+  const safeProtocol = Number(protocol) >= 2 ? 2 : 1;
   const room = {
     code,
     gmSecret,
@@ -84,8 +84,10 @@ export function createRoom({ roomCode, gmName, gmClientId, socketId, protocol = 
       online: true,
     },
     players: new Map(),
-    // Legacy protocol v1 state. Protocol v2 clients keep all campaign/session data
-    // on the GM device and use Cloud Run only for presence + relay traffic.
+    // Protocol v2+ keeps authoritative campaign data on the GM device. The
+    // relay stores the most recent lightweight manifest so returning players
+    // can reconnect from their local cache while the GM is temporarily away.
+    lastManifest: null,
     scene: makeScene(),
     chat: [],
     log: [],
