@@ -29,6 +29,10 @@ const PORT = Number(process.env.PORT || 8080);
 const DEFAULT_ORIGINS = [
   "https://pip-2d20.fun",
   "https://www.pip-2d20.fun",
+  // Capacitor serves bundled Android/iOS builds from these local origins.
+  "https://localhost",
+  "http://localhost",
+  "capacitor://localhost",
   "http://localhost:5173",
   "http://127.0.0.1:5173",
 ];
