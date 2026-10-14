@@ -186,6 +186,10 @@ io.on("connection", (socket) => {
         gmName: payload.gmName,
         gmClientId: payload.clientId,
         socketId: socket.id,
+        // The GM uses protocol 3 on the client; the relay model normalizes
+        // protocol >=2 to its lightweight, GM-authoritative presence format.
+        protocol: payload.protocol,
+        campaignId: payload.campaignId,
       });
       joinSocketToRoom(socket, room, "gm", room.gm.clientId);
       ackOk(ack, { roomCode: room.code, gmSecret: room.gmSecret, state: publicRoom(room) });
